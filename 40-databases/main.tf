@@ -5,3 +5,27 @@ resource "aws_instance" "mongodb" {
   vpc_security_group_ids = [local.mongodb_sg_id]
   tags = local.common_tags
   }
+
+  
+resource "terraform_data" "bootstrap" {
+  triggers_replace = [
+    aws_instance.mongodb.ami_id
+]
+  connection {
+    type = "ssh"
+    user = "ec2_user"
+    password = "DevOps321"
+    host = self.public_ip
+  }
+provisioner "file" {
+  source = "${path.module}/bootstrap.sh"
+  destination = "/tmp/bootstrap.sh"
+}
+
+  provisioner "remote-exec" {
+    inline =[
+      "chmod +x /tmp/bootstrap.sh",
+      "sudo sh /tmp/bootstrap.sh"
+    ]
+  }
+}
