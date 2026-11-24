@@ -20,13 +20,13 @@ resource "terraform_data" "bootstrap" {
   }
 provisioner "file" {
   source = "${path.module}/bootstrap.sh"
-  destination = "/tmp/bootstrap.sh mongodb ${var.environment}"
+  destination = "/tmp/bootstrap.sh "
 }
 
   provisioner "remote-exec" {
     inline =[
       "chmod +x /tmp/bootstrap.sh",
-      "sudo sh /tmp/bootstrap.sh"
+      "sudo sh /tmp/bootstrap.sh mongodb ${var.environment}"
     ]
   }
 }
