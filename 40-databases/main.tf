@@ -20,7 +20,7 @@ resource "terraform_data" "bootstrap" {
   }
 provisioner "file" {
   source = "${path.module}/bootstrap.sh"
-  destination = "/tmp/bootstrap.sh "
+  destination = "/tmp/bootstrap.sh"
 }
 
   provisioner "remote-exec" {
@@ -83,28 +83,28 @@ resource "aws_instance" "mysql" {
   }
 
   
-resource "terraform_data" "mysql" {
-  triggers_replace = [
-    aws_instance.mysql.id
-]
-  connection {
-    type = "ssh"
-    user = "ec2-user"
-    password = "DevOps321"
-    host = aws_instance.mysql.private_ip
-  }
-provisioner "file" {
-  source = "${path.module}/bootstrap.sh"
-  destination = "/tmp/bootstrap.sh"
-}
+# resource "terraform_data" "mysql" {
+#   triggers_replace = [
+#     aws_instance.mysql.id
+# ]
+#   connection {
+#     type = "ssh"
+#     user = "ec2-user"
+#     password = "DevOps321"
+#     host = aws_instance.mysql.private_ip
+#   }
+# provisioner "file" {
+#   source = "${path.module}/bootstrap.sh"
+#   destination = "/tmp/bootstrap.sh"
+# }
 
-  provisioner "remote-exec" {
-    inline =[
-      "chmod +x /tmp/bootstrap.sh",
-      "sudo sh /tmp/bootstrap.sh mysql ${var.environment}"
-    ]
-  }
-}
+#   provisioner "remote-exec" {
+#     inline =[
+#       "chmod +x /tmp/bootstrap.sh",
+#       "sudo sh /tmp/bootstrap.sh mysql ${var.environment}"
+#     ]
+#   }
+# }
 
 
 ####rabbitmq###
