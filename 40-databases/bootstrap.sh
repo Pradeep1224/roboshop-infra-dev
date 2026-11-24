@@ -2,6 +2,7 @@
 component=$1
 environment=$2
 dnf install ansible -y 
+pip3.7 install botocore boto3
 cd /home/ec2-user
 git clone https://github.com/Pradeep1224/ansiblev3.git
 cd ansiblev3
