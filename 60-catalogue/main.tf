@@ -42,7 +42,7 @@ resource "aws_ec2_instance_state" "catalogue" {
 }
 
 resource "aws_ami_from_instance" "catalogue" {
-  name  ="${local.common_name}-catalogue-${app_version}-${aws_instance.catalogue.id}" #catalogue-v4-instance_id
+  name  ="${local.common_name}-catalogue-${var.app_version}-${aws_instance.catalogue.id}" 
   source_instance_id = aws_instance.catalogue.id
   depends_on = [ aws_ec2_instance_state.catalogue ]
 
