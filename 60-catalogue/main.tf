@@ -60,6 +60,7 @@ resource "aws_launch_template" "catalogue" {
   instance_type = "t3.micro"
   vpc_security_group_ids = [local.catalogue_sg_id]
   update_default_version = true
+  
 tag_specifications {
     resource_type = "instance"
 tags = merge(
@@ -76,5 +77,114 @@ tags = merge(
     })
   }
 }
+
+
+resource "aws_lb_target_group" "catalogue" {
+  name     = "${local.common_name}-catalogue"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = local.vpc_id
+  deregistration_delay = 10
+  health_check {
+    healthy_threshold = 2
+    interval = 10
+    unhealthy_threshold = 2
+    matcher = "200-299"
+    path = "/health"
+    port =  8080
+    protocol = HTTP
+    timeout = 5
+
+  }
+}
+
+
+resource "aws_autoscaling_group" "catalogue" {
+  name                      = "${local.common_name}-catalogue"
+  max_size                  = 5
+  min_size                  = 1
+  health_check_grace_period = 120
+  health_check_type         = "ELB"
+  desired_capacity          = 2  #start with 2 immediately
+  force_delete              = true
+  
+  launch_template {
+    id =aws_launch_template.catalogue.id
+    version = "$latest"
+  }
+  vpc_zone_identifier       = local.private_subnet_ids
+target_group_arns = [aws_lb_target_group.catalogue.arn]
+instance_refresh {
+  strategy = "rolling"
+  preferences {
+    min_healthy_percentage = 50
+
+  }
+  triggers = ["launch_template"]
+}
+
+
+
+  dynamic "tag" {
+    for_each = merge(
+      local.common_tags,
+      {
+        Name = "${local.common_name}-catalogue"
+      }
+      ) 
+      
+    content {
+          key = tag.key
+        value = tag.value
+        propagate_at_launch = true
+      }
+      }
+    timeouts {
+    delete = "15m"
+  }
+
+}
+
+resource "aws_autoscaling_policy" "catalogue" {
+  name = "${local.common_name}-catalogue"
+  
+  autoscaling_group_name = aws_autoscaling_group.catalogue.name
+  policy_type = "TargetTrackingScaling"
+
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+    target_value = 75.0
+  }
+ 
+}
+
+resource "aws_alb_listener_rule" "catalogue" {
+  listener_arn = local.backend_alb_listener_arn
+  priority = 10
+  action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.catalogue.arn
+  }
+  condition {
+    host_header {
+      values = ["catalogue.backend-alb-${var.environment}.${var.domain_name}"]
+    }
+  }
+}
+
+resource "terraform_data" "delete_instance" {
+  triggers_replace = [
+    aws_instance.catalogue.id
+]
+depends_on = [ aws_autoscaling_policy.catalogue ]  
+provisioner "local-exec" {
+  command = "aws ec2 terminate-instances --instance-ids ${aws_instance.catalogue.id}"
+  }
+}
+
+
 
 
